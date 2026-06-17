@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin — Espacio Contigo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --teal:#1D9E75; --teal-dark:#0F6E56; --teal-light:#E1F5EE; --teal-mid:#5DCAA5;
+      --red:#E24B4A; --red-light:#FCEBEB; --red-dark:#A32D2D;
+      --amber:#EF9F27; --amber-light:#FAEEDA; --amber-dark:#633806;
+      --gray-50:#F8F8F7; --gray-100:#F1F0ED; --gray-200:#E0DFDB;
+      --gray-400:#9E9D97; --gray-600:#5F5E5A; --gray-900:#1A1A18;
+      --radius-sm:6px; --radius-md:10px; --radius-lg:16px;
+    }
+    body { font-family:'Inter',sans-serif; background:var(--gray-50); color:var(--gray-900); min-height:100vh; }
+
+    /* LOGIN */
+    #login-screen {
+      min-height:100vh; display:flex; align-items:center; justify-content:center; padding:1rem;
+    }
+    .login-card {
+      background:white; border:1px solid var(--gray-200); border-radius:var(--radius-lg);
+      padding:2rem; width:100%; max-width:360px;
+    }
+    .login-logo { font-size:18px; font-weight:600; color:var(--gray-900); margin-bottom:4px; }
+    .login-logo span { color:var(--teal); }
+    .login-sub { font-size:13px; color:var(--gray-400); margin-bottom:1.5rem; }
+    .field-label { font-size:12px; font-weight:500; color:var(--gray-600); margin-bottom:5px; display:block; }
+    input[type=email], input[type=password] {
+      width:100%; padding:10px 14px; border:1px solid var(--gray-200);
+      border-radius:var(--radius-md); font-size:14px; font-family:inherit;
+      color:var(--gray-900); outline:none; margin-bottom:12px;
+    }
+    input:focus { border-color:var(--teal); }
+    .btn { display:inline-flex; align-items:center; justify-content:center; gap:6px; padding:11px 20px; border-radius:var(--radius-md); font-size:14px; font-weight:500; cursor:pointer; border:none; font-family:inherit; transition:all .15s; width:100%; }
+    .btn-primary { background:var(--teal); color:white; }
+    .btn-primary:hover { background:var(--teal-dark); }
+    .btn-outline { background:white; color:var(--gray-900); border:1px solid var(--gray-200); }
+    .btn-outline:hover { background:var(--gray-100); }
+    .btn-danger { background:var(--red); color:white; }
+    .btn-sm { padding:7px 14px; font-size:12px; width:auto; }
+    .login-err { font-size:12px; color:var(--red-dark); margin-top:8px; display:none; }
+
+    /* LAYOUT */
+    #admin-app { display:none; min-height:100vh; }
+    .topbar {
+      background:white; border-bottom:1px solid var(--gray-200);
+      height:56px; display:flex; align-items:center; justify-content:space-between;
+      padding:0 1.5rem; position:sticky; top:0; z-index:100;
+    }
+    .topbar-logo { font-size:15px; font-weight:600; }
+    .topbar-logo span { color:var(--teal); }
+    .topbar-right { display:flex; align-items:center; gap:12px; }
+    .live-badge { display:flex; align-items:center; gap:5px; font-size:12px; color:var(--teal-dark); background:var(--teal-light); padding:4px 10px; border-radius:20px; }
+    .live-dot { width:7px; height:7px; border-radius:50%; background:var(--teal); animation:blink 2s infinite; }
+    @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+    .logout-btn { font-size:12px; color:var(--gray-600); cursor:pointer; background:none; border:none; font-family:inherit; display:flex; align-items:center; gap:4px; }
+    .logout-btn:hover { color:var(--red); }
+
+    .layout { display:grid; grid-template-columns:200px 1fr; min-height:calc(100vh - 56px); }
+    .sidebar { background:white; border-right:1px solid var(--gray-200); padding:1rem 0; }
+    .nav-item { display:flex; align-items:center; gap:10px; padding:10px 1.25rem; font-size:13px; font-weight:500; color:var(--gray-600); cursor:pointer; transition:all .15s; border:none; background:none; font-family:inherit; width:100%; }
+    .nav-item:hover { background:var(--gray-100); color:var(--gray-900); }
+    .nav-item.active { background:var(--teal-light); color:var(--teal-dark); }
+    .nav-item i { font-size:16px; }
+    .nav-badge { margin-left:auto; background:var(--red-light); color:var(--red-dark); font-size:10px; padding:2px 7px; border-radius:20px; font-weight:600; }
+    .nav-badge.green { background:var(--teal-light); color:var(--teal-dark); }
+
+    .content { padding:1.5rem; overflow-y:auto; }
+    .panel { display:none; }
+    .panel.active { display:block; }
+
+    /* METRICS */
+    .metrics-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin-bottom:1.5rem; }
+    .metric-card { background:white; border:1px solid var(--gray-200); border-radius:var(--radius-lg); padding:1.125rem 1.25rem; }
+    .metric-label { font-size:11px; color:var(--gray-400); font-weight:500; text-transform:uppercase; letter-spacing:.4px; margin-bottom:8px; }
+    .metric-val { font-size:28px; font-weight:600; color:var(--gray-900); }
+    .metric-sub { font-size:11px; color:var(--gray-400); margin-top:4px; }
+    .metric-card.danger .metric-val { color:var(--red); }
+    .metric-card.warn .metric-val { color:var(--amber); }
+    .metric-card.ok .metric-val { color:var(--teal); }
+
+    /* CHART */
+    .chart-card { background:white; border:1px solid var(--gray-200); border-radius:var(--radius-lg); padding:1.25rem; margin-bottom:1.25rem; }
+    .chart-title { font-size:14px; font-weight:600; color:var(--gray-900); margin-bottom:1rem; }
+    .chart-wrap { position:relative; height:180px; }
+
+    /* ALERTS */
+    .section-label { font-size:11px; font-weight:600; color:var(--gray-400); text-transform:uppercase; letter-spacing:.5px; margin-bottom:.75rem; }
+    .filter-row { display:flex; gap:6px; margin-bottom:1rem; flex-wrap:wrap; }
+    .filter-btn { padding:5px 12px; border:1px solid var(--gray-200); border-radius:20px; font-size:12px; cursor:pointer; background:white; color:var(--gray-600); font-family:inherit; transition:all .15s; }
+    .filter-btn.active { background:var(--teal-light); border-color:var(--teal-mid); color:var(--teal-dark); font-weight:500; }
+
+    .alert-list { display:flex; flex-direction:column; gap:8px; }
+    .alert-row {
+      background:white; border:1px solid var(--gray-200); border-radius:var(--radius-md);
+      padding:12px 14px; display:flex; align-items:center; gap:12px;
+      cursor:pointer; transition:background .15s;
+    }
+    .alert-row:hover { background:var(--gray-100); }
+    .alert-row.crisis { border-left:3px solid var(--red); }
+    .alert-row.atencion { border-left:3px solid var(--amber); }
+    .alert-row.seguimiento { border-left:3px solid var(--teal); }
+    .alert-icon { width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0; }
+    .alert-icon.crisis { background:var(--red-light); color:var(--red); }
+    .alert-icon.atencion { background:var(--amber-light); color:var(--amber); }
+    .alert-icon.seguimiento { background:var(--teal-light); color:var(--teal); }
+    .alert-info { flex:1; min-width:0; }
+    .alert-session { font-size:13px; font-weight:500; color:var(--gray-900); }
+    .alert-preview { font-size:12px; color:var(--gray-400); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:340px; }
+    .alert-meta { display:flex; flex-direction:column; align-items:flex-end; gap:4px; flex-shrink:0; }
+    .alert-time { font-size:11px; color:var(--gray-400); }
+    .level-badge { padding:2px 8px; border-radius:20px; font-size:10px; font-weight:600; }
+    .level-badge.crisis { background:var(--red-light); color:var(--red-dark); }
+    .level-badge.atencion { background:var(--amber-light); color:var(--amber-dark); }
+    .level-badge.seguimiento { background:var(--teal-light); color:var(--teal-dark); }
+    .atendida-badge { background:var(--gray-100); color:var(--gray-400); padding:2px 8px; border-radius:20px; font-size:10px; }
+
+    /* MESSAGES */
+    .msg-panel { background:white; border:1px solid var(--gray-200); border-radius:var(--radius-lg); overflow:hidden; display:grid; grid-template-columns:260px 1fr; height:520px; }
+    .msg-list { border-right:1px solid var(--gray-200); overflow-y:auto; }
+    .msg-item { padding:12px 14px; border-bottom:1px solid var(--gray-100); cursor:pointer; display:flex; gap:10px; align-items:flex-start; transition:background .15s; }
+    .msg-item:hover { background:var(--gray-100); }
+    .msg-item.active { background:var(--teal-light); }
+    .msg-av { width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:600; flex-shrink:0; }
+    .msg-info { flex:1; min-width:0; }
+    .msg-name { font-size:13px; font-weight:500; color:var(--gray-900); }
+    .msg-preview { font-size:11px; color:var(--gray-400); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .msg-time-sm { font-size:10px; color:var(--gray-400); flex-shrink:0; }
+    .unread-dot { width:8px; height:8px; border-radius:50%; background:var(--teal); flex-shrink:0; margin-top:4px; }
+
+    .conv-wrap { display:flex; flex-direction:column; height:100%; }
+    .conv-header { padding:1rem 1.25rem; border-bottom:1px solid var(--gray-200); display:flex; align-items:center; justify-content:space-between; }
+    .conv-header-name { font-size:14px; font-weight:600; color:var(--gray-900); }
+    .conv-header-sub { font-size:11px; color:var(--gray-400); }
+    .conv-messages { flex:1; overflow-y:auto; padding:1rem; display:flex; flex-direction:column; gap:10px; background:var(--gray-50); }
+    .cmsg { max-width:78%; padding:9px 13px; border-radius:14px; font-size:13px; line-height:1.65; }
+    .cmsg.user { background:white; border:1px solid var(--gray-200); color:var(--gray-900); align-self:flex-start; border-bottom-left-radius:4px; }
+    .cmsg.bot { background:var(--teal-light); color:var(--teal-dark); align-self:flex-start; border-bottom-left-radius:4px; font-style:italic; }
+    .cmsg.admin { background:var(--teal); color:white; align-self:flex-end; border-bottom-right-radius:4px; }
+    .cmsg-time { font-size:10px; color:var(--gray-400); margin-top:2px; }
+    .cmsg-time.r { text-align:right; }
+    .conv-input-row { padding:.875rem 1rem; border-top:1px solid var(--gray-200); display:flex; gap:8px; align-items:center; background:white; }
+    .conv-input { flex:1; padding:9px 14px; border:1px solid var(--gray-200); border-radius:20px; font-size:13px; font-family:inherit; outline:none; color:var(--gray-900); }
+    .conv-input:focus { border-color:var(--teal); }
+    .conv-send { width:36px; height:36px; border-radius:50%; background:var(--teal); border:none; cursor:pointer; color:white; font-size:16px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .conv-send:hover { background:var(--teal-dark); }
+    .empty-conv { display:flex; align-items:center; justify-content:center; height:100%; color:var(--gray-400); font-size:13px; flex-direction:column; gap:8px; }
+
+    /* CONTACTS */
+    .contacts-list { display:flex; flex-direction:column; gap:8px; }
+    .contact-card { background:white; border:1px solid var(--gray-200); border-radius:var(--radius-md); padding:12px 14px; display:flex; align-items:center; gap:12px; }
+    .contact-av { width:34px; height:34px; border-radius:50%; background:var(--teal-light); display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0; }
+    .contact-info { flex:1; }
+    .contact-name { font-size:13px; font-weight:500; color:var(--gray-900); }
+    .contact-wa { font-size:12px; color:var(--teal); margin-top:2px; }
+    .contact-time { font-size:11px; color:var(--gray-400); }
+    .wa-btn { display:inline-flex; align-items:center; gap:5px; padding:6px 12px; background:#25D366; color:white; border-radius:20px; font-size:12px; text-decoration:none; font-weight:500; }
+
+    .empty-state { text-align:center; padding:3rem 1rem; color:var(--gray-400); }
+    .empty-state i { font-size:36px; margin-bottom:12px; display:block; }
+    .empty-state p { font-size:13px; }
+    .loading { text-align:center; padding:2rem; color:var(--gray-400); font-size:13px; }
+
+    /* MOOD BAR */
+    .mood-bars { display:flex; flex-direction:column; gap:8px; }
+    .mbar-row { display:flex; align-items:center; gap:10px; }
+    .mbar-label { font-size:12px; color:var(--gray-600); width:80px; flex-shrink:0; text-align:right; }
+    .mbar-track { flex:1; height:10px; background:var(--gray-100); border-radius:5px; overflow:hidden; }
+    .mbar-fill { height:100%; border-radius:5px; }
+    .mbar-count { font-size:12px; color:var(--gray-400); width:30px; text-align:right; }
+
+    .topics-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .topic-item { background:white; border:1px solid var(--gray-200); border-radius:var(--radius-md); padding:10px 14px; }
+    .topic-name { font-size:12px; font-weight:500; color:var(--gray-600); margin-bottom:6px; }
+    .topic-bar-track { height:6px; background:var(--gray-100); border-radius:3px; overflow:hidden; }
+    .topic-bar-fill { height:100%; border-radius:3px; background:var(--teal); }
+    .topic-count { font-size:11px; color:var(--gray-400); margin-top:4px; }
+
+    @media(max-width:768px) {
+      .layout { grid-template-columns:1fr; }
+      .sidebar { display:none; }
+      .msg-panel { grid-template-columns:1fr; }
+      .msg-list { display:none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══ LOGIN ══ -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">Espacio <span>Contigo</span></div>
+    <div class="login-sub">Panel de administrador</div>
+    <label class="field-label">Correo electrónico</label>
+    <input type="email" id="login-email" placeholder="admin@espaciocontigo.com" />
+    <label class="field-label">Contraseña</label>
+    <input type="password" id="login-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()" />
+    <button class="btn btn-primary" onclick="doLogin()"><i class="ti ti-login"></i> Ingresar</button>
+    <div class="login-err" id="login-err">Correo o contraseña incorrectos.</div>
+  </div>
+</div>
+
+<!-- ══ ADMIN APP ══ -->
+<div id="admin-app">
+  <header class="topbar">
+    <div class="topbar-logo">Espacio <span>Contigo</span> <span style="font-size:12px;font-weight:400;color:var(--gray-400)">· Admin</span></div>
+    <div class="topbar-right">
+      <div class="live-badge"><span class="live-dot"></span> En vivo</div>
+      <button class="logout-btn" onclick="doLogout()"><i class="ti ti-logout"></i> Salir</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <button class="nav-item active" id="nav-resumen" onclick="goPanel('resumen')"><i class="ti ti-chart-bar"></i> Resumen</button>
+      <button class="nav-item" id="nav-alertas" onclick="goPanel('alertas')"><i class="ti ti-alert-triangle"></i> Alertas <span class="nav-badge" id="badge-alertas">0</span></button>
+      <button class="nav-item" id="nav-mensajes" onclick="goPanel('mensajes')"><i class="ti ti-messages"></i> Mensajes <span class="nav-badge green" id="badge-mensajes">0</span></button>
+      <button class="nav-item" id="nav-contactos" onclick="goPanel('contactos')"><i class="ti ti-brand-whatsapp"></i> Contactos <span class="nav-badge green" id="badge-contactos">0</span></button>
+      <button class="nav-item" id="nav-temas" onclick="goPanel('temas')"><i class="ti ti-tag"></i> Temas</button>
+    </aside>
+
+    <!-- CONTENT -->
+    <main class="content">
+
+      <!-- ── RESUMEN ── -->
+      <div class="panel active" id="panel-resumen">
+        <div style="margin-bottom:1.25rem">
+          <h1 style="font-size:20px;font-weight:600;color:var(--gray-900)">Resumen del día</h1>
+          <p style="font-size:13px;color:var(--gray-400)" id="fecha-hoy"></p>
+        </div>
+        <div class="metrics-grid">
+          <div class="metric-card"><div class="metric-label">Sesiones hoy</div><div class="metric-val" id="m-sesiones">—</div><div class="metric-sub">Usuarios únicos</div></div>
+          <div class="metric-card danger"><div class="metric-label">Alertas crisis</div><div class="metric-val" id="m-crisis">—</div><div class="metric-sub">Sin atender</div></div>
+          <div class="metric-card warn"><div class="metric-label">Ánimo promedio</div><div class="metric-val" id="m-animo">—</div><div class="metric-sub">Escala 1–5</div></div>
+          <div class="metric-card ok"><div class="metric-label">Contactos WA</div><div class="metric-val" id="m-contactos">—</div><div class="metric-sub">Solicitudes hoy</div></div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-title">Estado de ánimo reportado hoy</div>
+          <div class="mood-bars" id="mood-bars">
+            <div class="loading">Cargando datos...</div>
+          </div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-title">Actividad por hora (últimas 12h)</div>
+          <div class="chart-wrap"><canvas id="hourChart"></canvas></div>
+        </div>
+      </div>
+
+      <!-- ── ALERTAS ── -->
+      <div class="panel" id="panel-alertas">
+        <div style="margin-bottom:1.25rem;display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <h1 style="font-size:20px;font-weight:600;color:var(--gray-900)">Alertas</h1>
+            <p style="font-size:13px;color:var(--gray-400)">Sesiones que requieren atención humana</p>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="loadAlertas()"><i class="ti ti-refresh"></i> Actualizar</button>
+        </div>
+        <div class="filter-row">
+          <button class="filter-btn active" onclick="filterAlertas('todas',this)">Todas</button>
+          <button class="filter-btn" onclick="filterAlertas('crisis',this)">Crisis</button>
+          <button class="filter-btn" onclick="filterAlertas('atencion',this)">Atención</button>
+          <button class="filter-btn" onclick="filterAlertas('seguimiento',this)">Seguimiento</button>
+        </div>
+        <div class="alert-list" id="alert-list"><div class="loading">Cargando alertas...</div></div>
+      </div>
+
+      <!-- ── MENSAJES ── -->
+      <div class="panel" id="panel-mensajes">
+        <div style="margin-bottom:1.25rem">
+          <h1 style="font-size:20px;font-weight:600;color:var(--gray-900)">Mensajes del chat</h1>
+          <p style="font-size:13px;color:var(--gray-400)">Conversaciones de usuarios. Puedes responder como orientador.</p>
+        </div>
+        <div class="msg-panel">
+          <div class="msg-list" id="msg-list"><div class="loading">Cargando...</div></div>
+          <div class="conv-wrap">
+            <div class="conv-header">
+              <div>
+                <div class="conv-header-name" id="conv-name">Selecciona una sesión</div>
+                <div class="conv-header-sub" id="conv-sub">—</div>
+              </div>
+              <button class="btn btn-outline btn-sm" id="mark-read-btn" onclick="markAtendida()" style="display:none"><i class="ti ti-check"></i> Marcar atendida</button>
+            </div>
+            <div class="conv-messages" id="conv-messages">
+              <div class="empty-conv"><i class="ti ti-message-circle" style="font-size:32px;color:var(--gray-200)"></i><span>Selecciona una sesión a la izquierda</span></div>
+            </div>
+            <div class="conv-input-row">
+              <input class="conv-input" id="reply-input" placeholder="Escribe tu respuesta como orientador..." onkeydown="if(event.key==='Enter')sendAdminReply()" disabled />
+              <button class="conv-send" onclick="sendAdminReply()" id="reply-send-btn" disabled><i class="ti ti-send"></i></button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── CONTACTOS WHATSAPP ── -->
+      <div class="panel" id="panel-contactos">
+        <div style="margin-bottom:1.25rem;display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <h1 style="font-size:20px;font-weight:600;color:var(--gray-900)">Solicitudes de contacto</h1>
+            <p style="font-size:13px;color:var(--gray-400)">Usuarios que pidieron hablar con un orientador vía WhatsApp</p>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="loadContactos()"><i class="ti ti-refresh"></i> Actualizar</button>
+        </div>
+        <div class="contacts-list" id="contacts-list"><div class="loading">Cargando...</div></div>
+      </div>
+
+      <!-- ── TEMAS ── -->
+      <div class="panel" id="panel-temas">
+        <div style="margin-bottom:1.25rem">
+          <h1 style="font-size:20px;font-weight:600;color:var(--gray-900)">Temas del día</h1>
+          <p style="font-size:13px;color:var(--gray-400)">Qué está pesando más en la comunidad hoy</p>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Temas mencionados en el chat</div>
+          <div class="chart-wrap"><canvas id="temasChart"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Herramientas más usadas</div>
+          <div class="topics-grid" id="tools-used"><div class="loading">Cargando...</div></div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- ════ FIREBASE ════ -->
+<script type="module">
+import { initializeApp }    from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, collection, query, where, orderBy, limit,
+         onSnapshot, addDoc, updateDoc, doc, getDocs, serverTimestamp, getCountFromServer }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+/* ── CONFIG — igual que en index.html ── */
+const firebaseConfig = {
+  apiKey:            "TU_API_KEY",
+  authDomain:        "TU_PROYECTO.firebaseapp.com",
+  projectId:         "TU_PROYECTO",
+  storageBucket:     "TU_PROYECTO.appspot.com",
+  messagingSenderId: "TU_SENDER_ID",
+  appId:             "TU_APP_ID"
+};
+
+const app  = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db   = getFirestore(app);
+window._db = db;
+
+/* ── AUTH ── */
+onAuthStateChanged(auth, user => {
+  if (user) {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('admin-app').style.display   = 'block';
+    initAdmin();
+  } else {
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('admin-app').style.display   = 'none';
+  }
+});
+
+window.doLogin = async () => {
+  const email = document.getElementById('login-email').value.trim();
+  const pass  = document.getElementById('login-pass').value;
+  const err   = document.getElementById('login-err');
+  err.style.display = 'none';
+  try { await signInWithEmailAndPassword(auth, email, pass); }
+  catch(e) { err.style.display = 'block'; }
+};
+window.doLogout = () => signOut(auth);
+
+/* ── HELPERS ── */
+const hoy = () => new Date().toLocaleDateString('es-VE');
+const fmtTime = ts => {
+  if (!ts) return '—';
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  return d.toLocaleTimeString('es-VE',{hour:'2-digit',minute:'2-digit'});
+};
+const fmtRel = ts => {
+  if (!ts) return '—';
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  const diff = Math.floor((Date.now() - d.getTime()) / 60000);
+  if (diff < 1)  return 'ahora';
+  if (diff < 60) return `hace ${diff}m`;
+  const h = Math.floor(diff/60);
+  return `hace ${h}h`;
+};
+
+/* ── INIT ── */
+function initAdmin() {
+  document.getElementById('fecha-hoy').textContent =
+    new Date().toLocaleDateString('es-VE',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  loadResumen();
+  loadAlertas();
+  loadMensajes();
+  loadContactos();
+  listenBadges();
+}
+
+/* ── RESUMEN ── */
+async function loadResumen() {
+  try {
+    // Sesiones únicas hoy
+    const qEval = query(collection(db,'evaluaciones'), where('fecha','==',hoy()));
+    const evalSnap = await getDocs(qEval);
+    const sessions = new Set();
+    let moodSum = 0; let moodCount = 0;
+    const moodDist = {1:0,2:0,3:0,4:0,5:0};
+    evalSnap.forEach(d => {
+      const v = d.data();
+      sessions.add(v.sessionId);
+      if (v.mood) { moodSum += v.mood; moodCount++; moodDist[v.mood]++; }
+    });
+    document.getElementById('m-sesiones').textContent = sessions.size || '0';
+    document.getElementById('m-animo').textContent = moodCount ? (moodSum/moodCount).toFixed(1) : '—';
+    renderMoodBars(moodDist, moodCount);
+
+    // Crisis sin atender
+    const qCrisis = query(collection(db,'alertas'), where('atendida','==',false));
+    const crisisSnap = await getDocs(qCrisis);
+    document.getElementById('m-crisis').textContent = crisisSnap.size;
+
+    // Contactos hoy
+    const qCont = query(collection(db,'contactos'), where('fecha','==',hoy()));
+    const contSnap = await getDocs(qCont);
+    document.getElementById('m-contactos').textContent = contSnap.size;
+
+    renderHourChart();
+    loadTemas();
+  } catch(e) { console.warn('Sin datos Firebase aún:', e.message); renderDemo(); }
+}
+
+function renderMoodBars(dist, total) {
+  const labels = {1:'Muy mal',2:'Mal',3:'Regular',4:'Bien',5:'Muy bien'};
+  const colors = {1:'#E24B4A',2:'#EF9F27',3:'#9E9D97',4:'#1D9E75',5:'#639922'};
+  const box = document.getElementById('mood-bars');
+  if (!total) { box.innerHTML = '<div class="loading">Sin evaluaciones hoy aún.</div>'; return; }
+  box.innerHTML = [1,2,3,4,5].map(n => {
+    const pct = total ? Math.round((dist[n]/total)*100) : 0;
+    return `<div class="mbar-row">
+      <div class="mbar-label">${labels[n]}</div>
+      <div class="mbar-track"><div class="mbar-fill" style="width:${pct}%;background:${colors[n]}"></div></div>
+      <div class="mbar-count">${dist[n]}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderDemo() {
+  document.getElementById('m-sesiones').textContent = '—';
+  document.getElementById('m-crisis').textContent = '—';
+  document.getElementById('m-animo').textContent = '—';
+  document.getElementById('m-contactos').textContent = '—';
+  document.getElementById('mood-bars').innerHTML = '<div class="loading">Conecta Firebase para ver datos reales.</div>';
+}
+
+function renderHourChart() {
+  const ctx = document.getElementById('hourChart');
+  if (!ctx || ctx._chart) return;
+  const hours = Array.from({length:12},(_,i)=>{ const h=(new Date().getHours()-11+i+24)%24; return h+':00'; });
+  ctx._chart = new Chart(ctx, {
+    type:'line',
+    data:{
+      labels: hours,
+      datasets:[{
+        label:'Sesiones', data: Array.from({length:12},()=>0),
+        borderColor:'#1D9E75', backgroundColor:'rgba(29,158,117,.08)',
+        borderWidth:2, pointRadius:3, pointBackgroundColor:'#1D9E75',
+        fill:true, tension:.4
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{
+        x:{grid:{display:false}, ticks:{font:{size:11},color:'#9E9D97'}},
+        y:{grid:{color:'rgba(158,157,151,.15)'}, ticks:{font:{size:11},color:'#9E9D97',stepSize:1}, beginAtZero:true}
+      }
+    }
+  });
+}
+
+async function loadTemas() {
+  try {
+    const qMsg = query(collection(db,'mensajes'), where('sender','==','user'));
+    const snap = await getDocs(qMsg);
+    const temas = {};
+    snap.forEach(d => { const t = d.data().theme; if(t && t!=='null') temas[t]=(temas[t]||0)+1; });
+    renderTemasChart(temas);
+  } catch(e) { renderTemasChart({}); }
+}
+
+function renderTemasChart(temas) {
+  const ctx = document.getElementById('temasChart');
+  if (!ctx) return;
+  const labels = Object.keys(temas).length ? Object.keys(temas) : ['Sin datos'];
+  const vals   = Object.values(temas).length ? Object.values(temas) : [0];
+  new Chart(ctx, {
+    type:'bar',
+    data:{
+      labels,
+      datasets:[{data:vals, backgroundColor:'#1D9E75', borderRadius:6}]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{
+        x:{grid:{display:false}, ticks:{font:{size:11},color:'#9E9D97'}},
+        y:{grid:{color:'rgba(158,157,151,.15)'}, ticks:{font:{size:11},color:'#9E9D97'}, beginAtZero:true}
+      }
+    }
+  });
+  document.getElementById('tools-used').innerHTML = '<div class="loading">Implementa registro de herramientas para ver datos.</div>';
+}
+
+/* ── ALERTAS ── */
+let allAlertas = [];
+window.loadAlertas = async () => {
+  const list = document.getElementById('alert-list');
+  list.innerHTML = '<div class="loading">Cargando...</div>';
+  try {
+    const q = query(collection(db,'alertas'), orderBy('timestamp','desc'), limit(50));
+    onSnapshot(q, snap => {
+      allAlertas = snap.docs.map(d => ({id:d.id, ...d.data()}));
+      renderAlertas(allAlertas);
+      document.getElementById('badge-alertas').textContent =
+        allAlertas.filter(a => !a.atendida && a.nivel==='crisis').length;
+    });
+  } catch(e) {
+    list.innerHTML = '<div class="empty-state"><i class="ti ti-database-off"></i><p>Conecta Firebase para ver alertas reales.</p></div>';
+  }
+};
+
+function renderAlertas(data) {
+  const list = document.getElementById('alert-list');
+  if (!data.length) { list.innerHTML = '<div class="empty-state"><i class="ti ti-check"></i><p>Sin alertas pendientes. ¡Todo tranquilo!</p></div>'; return; }
+  list.innerHTML = data.map(a => {
+    const nivel = a.nivel || 'seguimiento';
+    const icons = {crisis:'ti-alert-triangle', atencion:'ti-mood-sad', seguimiento:'ti-heart'};
+    const atendida = a.atendida ? '<span class="atendida-badge">Atendida</span>' : `<span class="level-badge ${nivel}">${nivel.charAt(0).toUpperCase()+nivel.slice(1)}</span>`;
+    return `<div class="alert-row ${nivel}" onclick="openAlertaSession('${a.sessionId}','${a.id}')">
+      <div class="alert-icon ${nivel}"><i class="ti ${icons[nivel]||'ti-alert-circle'}"></i></div>
+      <div class="alert-info">
+        <div class="alert-session">Sesión ${a.sessionId?.slice(-8)||'—'}</div>
+        <div class="alert-preview">${a.texto||'Sin texto'}</div>
+      </div>
+      <div class="alert-meta">
+        <div class="alert-time">${fmtRel(a.timestamp)}</div>
+        ${atendida}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+window.filterAlertas = (tipo, el) => {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  const filtered = tipo === 'todas' ? allAlertas : allAlertas.filter(a => a.nivel === tipo);
+  renderAlertas(filtered);
+};
+
+window.openAlertaSession = (sessionId, alertaId) => {
+  goPanel('mensajes');
+  window._openSession = sessionId;
+  window._openAlertaId = alertaId;
+};
+
+/* ── MENSAJES ── */
+let sessions = [];
+let activeSession = null;
+let unsubConv = null;
+
+window.loadMensajes = () => {
+  const q = query(collection(db,'mensajes'), orderBy('timestamp','desc'));
+  onSnapshot(q, snap => {
+    const bySession = {};
+    snap.docs.forEach(d => {
+      const v = d.data();
+      if (!bySession[v.sessionId]) bySession[v.sessionId] = [];
+      bySession[v.sessionId].push({id:d.id,...v});
+    });
+    sessions = Object.entries(bySession).map(([sid, msgs]) => ({
+      sessionId: sid,
+      msgs: msgs.reverse(),
+      lastMsg: msgs[msgs.length-1],
+      hasUnread: msgs.some(m => m.sender==='user' && !m.leido)
+    })).sort((a,b) => (b.lastMsg?.timestamp?.seconds||0) - (a.lastMsg?.timestamp?.seconds||0));
+
+    renderMsgList();
+    document.getElementById('badge-mensajes').textContent = sessions.filter(s=>s.hasUnread).length;
+
+    if (window._openSession) {
+      const s = sessions.find(s => s.sessionId === window._openSession);
+      if (s) openConv(s);
+      window._openSession = null;
+    }
+  });
+};
+
+function renderMsgList() {
+  const list = document.getElementById('msg-list');
+  if (!sessions.length) { list.innerHTML = '<div class="loading">Sin mensajes aún.</div>'; return; }
+  list.innerHTML = sessions.map((s,i) => {
+    const last = s.lastMsg;
+    const colors = ['#E1F5EE','#FAEEDA','#FCEBEB','#EEF2FF','#F3E8FF'];
+    const txtColors = ['#085041','#633806','#791F1F','#3730A3','#581C87'];
+    const ci = i % colors.length;
+    const preview = last?.text?.slice(0,40) + (last?.text?.length>40?'...':'') || '—';
+    return `<div class="msg-item ${activeSession?.sessionId===s.sessionId?'active':''}" onclick="openConvById('${s.sessionId}')">
+      ${s.hasUnread ? '<div class="unread-dot"></div>' : '<div style="width:8px"></div>'}
+      <div class="msg-av" style="background:${colors[ci]};color:${txtColors[ci]}">${s.sessionId.slice(-4).toUpperCase()}</div>
+      <div class="msg-info">
+        <div class="msg-name">Sesión ...${s.sessionId.slice(-8)}</div>
+        <div class="msg-preview">${preview}</div>
+      </div>
+      <div class="msg-time-sm">${fmtRel(last?.timestamp)}</div>
+    </div>`;
+  }).join('');
+}
+
+window.openConvById = sid => { const s = sessions.find(x=>x.sessionId===sid); if(s) openConv(s); };
+
+function openConv(s) {
+  activeSession = s;
+  document.getElementById('conv-name').textContent = `Sesión ...${s.sessionId.slice(-8)}`;
+  document.getElementById('conv-sub').textContent = `${s.msgs.length} mensajes`;
+  document.getElementById('mark-read-btn').style.display = 'inline-flex';
+  document.getElementById('reply-input').disabled = false;
+  document.getElementById('reply-send-btn').disabled = false;
+  renderConvMsgs(s.msgs);
+  renderMsgList();
+
+  if (unsubConv) unsubConv();
+  const q = query(collection(db,'mensajes'), where('sessionId','==',s.sessionId), orderBy('timestamp'));
+  unsubConv = onSnapshot(q, snap => {
+    const msgs = snap.docs.map(d=>({id:d.id,...d.data()}));
+    renderConvMsgs(msgs);
+  });
+
+  // También escuchar respuestas admin
+  const qAdmin = query(collection(db,'respuestas_admin'), where('sessionId','==',s.sessionId), orderBy('timestamp'));
+  onSnapshot(qAdmin, snap => {
+    // Se integran en renderConvMsgs via mensajes combinados
+  });
+}
+
+function renderConvMsgs(msgs) {
+  const area = document.getElementById('conv-messages');
+  if (!msgs.length) { area.innerHTML = '<div class="empty-conv"><span>Sin mensajes</span></div>'; return; }
+  area.innerHTML = msgs.map(m => {
+    const cls = m.sender==='admin' ? 'admin' : m.sender==='bot' ? 'bot' : 'user';
+    const label = m.sender==='admin' ? 'Orientador' : m.sender==='bot' ? 'Valentina (IA)' : 'Usuario';
+    return `<div>
+      <div class="cmsg ${cls}">${(m.text||'').replace(/\n/g,'<br>')}</div>
+      <div class="cmsg-time ${cls==='admin'?'r':''}">${label} · ${fmtTime(m.timestamp)}</div>
+    </div>`;
+  }).join('');
+  area.scrollTop = area.scrollHeight;
+}
+
+window.sendAdminReply = async () => {
+  if (!activeSession) return;
+  const input = document.getElementById('reply-input');
+  const text  = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  try {
+    await addDoc(collection(db,'mensajes'), {
+      sessionId: activeSession.sessionId,
+      text, sender: 'admin',
+      timestamp: serverTimestamp(),
+      leido: true
+    });
+    await addDoc(collection(db,'respuestas_admin'), {
+      sessionId: activeSession.sessionId,
+      texto: text,
+      timestamp: serverTimestamp()
+    });
+  } catch(e) { alert('Error al enviar: ' + e.message); }
+};
+
+window.markAtendida = async () => {
+  if (!activeSession || !window._openAlertaId) return;
+  try {
+    await updateDoc(doc(db,'alertas',window._openAlertaId), {atendida:true});
+    window._openAlertaId = null;
+    document.getElementById('mark-read-btn').style.display = 'none';
+  } catch(e) {}
+};
+
+/* ── CONTACTOS ── */
+window.loadContactos = () => {
+  const list = document.getElementById('contacts-list');
+  list.innerHTML = '<div class="loading">Cargando...</div>';
+  const q = query(collection(db,'contactos'), orderBy('timestamp','desc'), limit(50));
+  onSnapshot(q, snap => {
+    const docs = snap.docs.map(d=>({id:d.id,...d.data()}));
+    document.getElementById('badge-contactos').textContent = docs.filter(d=>!d.atendido).length;
+    if (!docs.length) { list.innerHTML = '<div class="empty-state"><i class="ti ti-phone-off"></i><p>Sin solicitudes de contacto aún.</p></div>'; return; }
+    list.innerHTML = docs.map(c => `
+      <div class="contact-card">
+        <div class="contact-av">👤</div>
+        <div class="contact-info">
+          <div class="contact-name">${c.alias||'Anónimo'}</div>
+          <div class="contact-wa">${c.whatsapp||'Sin número'}</div>
+          <div class="contact-time">${fmtRel(c.timestamp)} · Sesión ...${(c.sessionId||'').slice(-8)}</div>
+        </div>
+        ${c.whatsapp ? `<a class="wa-btn" href="https://wa.me/58${c.whatsapp.replace(/[^0-9]/g,'').replace(/^0/,'')}" target="_blank"><i class="ti ti-brand-whatsapp"></i> Contactar</a>` : ''}
+      </div>`).join('');
+  });
+};
+
+/* ── BADGES EN TIEMPO REAL ── */
+function listenBadges() {
+  onSnapshot(query(collection(db,'alertas'), where('atendida','==',false), where('nivel','==','crisis')),
+    snap => { document.getElementById('badge-alertas').textContent = snap.size; });
+}
+
+/* ── PANEL NAV ── */
+window.goPanel = id => {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('panel-' + id).classList.add('active');
+  document.getElementById('nav-' + id).classList.add('active');
+};
+</script>
+
+</body>
+</html>

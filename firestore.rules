@@ -1,0 +1,36 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Evaluaciones: cualquiera puede escribir, solo admin lee
+    match /evaluaciones/{doc} {
+      allow create: if true;
+      allow read, update, delete: if request.auth != null;
+    }
+
+    // Mensajes: cualquiera escribe (usuarios y bot), solo admin lee todo
+    match /mensajes/{doc} {
+      allow create: if true;
+      allow read: if request.auth != null;
+      allow update, delete: if request.auth != null;
+    }
+
+    // Respuestas del admin: solo admin escribe, usuarios leen las suyas
+    match /respuestas_admin/{doc} {
+      allow create, update, delete: if request.auth != null;
+      allow read: if true;
+    }
+
+    // Alertas de crisis: cualquiera crea, solo admin lee y actualiza
+    match /alertas/{doc} {
+      allow create: if true;
+      allow read, update, delete: if request.auth != null;
+    }
+
+    // Solicitudes de contacto WhatsApp: cualquiera crea, solo admin lee
+    match /contactos/{doc} {
+      allow create: if true;
+      allow read, update, delete: if request.auth != null;
+    }
+  }
+}
