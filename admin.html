@@ -375,7 +375,7 @@ window.doLogin = async () => {
   const err   = document.getElementById('login-err');
   err.style.display = 'none';
   try { await signInWithEmailAndPassword(auth, email, pass); }
-  catch(e) { err.style.display = 'block'; }
+  catch(e) { err.style.display = 'block'; err.textContent = e.message; }
 };
 window.doLogout = () => signOut(auth);
 
